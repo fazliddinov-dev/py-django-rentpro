@@ -1,0 +1,55 @@
+[project]
+name = "py-drf-rentpro"
+version = "0.1.0"
+description = "Rental platform backend API"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "django>=4.2,<5.1",
+    "djangorestframework>=3.16.1",
+    "djangorestframework-simplejwt>=5.5.1",
+    "django-cors-headers>=4.9.0",
+    "psycopg[binary]>=3.3.2",
+    "python-dotenv>=1.2.1",
+    "structlog>=25.5.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=26.1.0",
+    "isort>=7.0.0",
+    "flake8>=6.1.0",
+    "flake8-django>=1.4",
+    "mypy>=1.19.1",
+    "pytest>=9.0.2",
+    "pytest-django>=4.12.0",
+    "factory-boy>=3.3.3",
+    "faker>=40.4.0",
+]
+[tool.black]
+line-length = 88
+target-version = ["py310"]
+
+[tool.isort]
+profile = "black"
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.dev"
+python_files = ["test_*.py", "*_test.py"]
+
+[dependency-groups]
+dev = [
+    "black>=26.1.0",
+    "factory-boy>=3.3.3",
+    "faker>=40.4.0",
+    "flake8>=6.1.0",
+    "flake8-django>=1.4",
+    "isort>=7.0.0",
+    "mypy>=1.19.1",
+    "pytest>=9.0.2",
+    "pytest-django>=4.12.0",
+]
