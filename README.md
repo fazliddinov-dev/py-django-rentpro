@@ -1,216 +1,318 @@
+---
 
+# 🏗 Project Architecture Documentation
 
-# 🏗️ Loyiha arxitekturasi
+## Overview
+
+This project follows **Clean Architecture principles** inspired by concepts from **Clean Architecture** by **Robert C. Martin**.
+
+The main goals of this architecture:
+
+* Separation of concerns
+* Independent business logic (framework-agnostic)
+* Easy testing
+* Replaceable infrastructure (DB, messaging, etc.)
+* Scalable and maintainable codebase
+
+---
+
+# 📂 Folder Structure Explanation
 
 ```
-myproject/
-├── config/         # Django core project config
-├── core/           # Business logic (DDD + Clean Architecture)
-│   ├── domain/     
-│   ├── application/
-│   └── infrastructure/
-├── api/            # DRF delivery layer (views, serializers, urls)
-├── cross_cutting/  # Logging, caching, monitoring, auth, validation
-├── tests/
-└── requirements/
+api/
+config/
+core/
+cross_cutting/
+tests/
 ```
 
 ---
 
-## 1️⃣ `config/` — Django project settings
+# 1️⃣ `api/` – Presentation Layer (Interface Adapters)
 
-**Ma’qsad:** Django’ning `settings.py`, `urls.py`, `wsgi`/`asgi` fayllari.
+This layer handles **external communication** (HTTP, REST, validation, serialization).
 
-**Qayerga yoziladi:**
+It depends on `core`, but `core` NEVER depends on `api`.
 
-* `config/settings/base.py` – umumiy settings (INSTALLED_APPS, MIDDLEWARE, DATABASES)
-* `config/settings/development.py` – DEBUG=True, CORS, local DB
-* `config/settings/production.py` – DEBUG=False, real DB, allowed hosts
+### Structure
 
-**Nima yoziladi:**
-
-* INSTALLED_APPS (core layer’ni Django app sifatida qo‘shish)
-* MIDDLEWARE (admin ishlashi uchun Session, Auth, Messages)
-* TEMPLATES (DjangoTemplates kerak bo‘lsa)
-* DATABASES (initial sqlite3 yoki postgres config)
-
-**Maslahat:** admin ishlashi uchun `SessionMiddleware`, `AuthMiddleware`, `MessageMiddleware` majburiy.
-
----
-
-## 2️⃣ `core/` — Domain va biznes logika
-
-**Ma’qsad:** Hamma “core” biznes qoidalar shu yerda, DRF yoki Django ORM dan mustaqil.
-
-### a) `core/domain/` — Domain layer (DDD)
-
-**Ma’qsad:** Business rules va domain knowledge.
-**Nima yoziladi:**
-
-* **entities.py** – asosiy entity’lar (`User`, `Order`)
-* **value_objects.py** – kichik immutable obyektlar (`Email`, `Price`)
-* **aggregates.py** – entity’larni birlashtiradigan aggregate root’lar
-* **events.py** – domain event’lar (masalan `OrderCreated`)
-
-**Qoidalar:** Bu layer **framework-agnostic**, ORM, DRF, HTTP bu layerga tegmasin.
-
----
-
-### b) `core/application/` — Use Cases / Service layer
-
-**Ma’qsad:** Application logic: request → response, domain bilan interfeys orqali ishlaydi.
-
-**Qayerga yoziladi:**
-
-* `user/use_cases.py` – `CreateUser`, `UpdateUser` kabi use-case’lar
-* `user/dtos.py` – input/output data transfer object
-* `interfaces/repositories.py` – abstract repository interface’lar (domain layer bilan bog‘lanish)
-* `services.py` – domain service’lar, biznes qoidalarni implementatsiya qiladigan kod
-
-**Qoidalar:**
-
-* Bu layer DRF view yoki DB bilan bevosita ishlamaydi
-* Repository interface orqali `infrastructure` bilan ishlaydi
-
----
-
-### c) `core/infrastructure/` — Infrastructure layer
-
-**Ma’qsad:** Real implementation: ORM, external services, DB access.
-
-**Qayerga yoziladi:**
-
-* `db/models/` – Django model fayllari
-* `db/repositories/` – abstract interface’ni implementatsiya qiladi (`DjangoUserRepository`)
-* `services/` – tashqi servislar (email, payment, SMS)
-
-**Qoidalar:**
-
-* Domain va Application layer’ga bog‘lanadi, lekin ulardan **business logic olmaydi**, faqat implementation
-
----
-
-## 3️⃣ `api/` — Delivery / DRF layer
-
-**Ma’qsad:** Django REST Framework orqali tashqi dunyoga API berish.
-
-**Qayerga yoziladi:**
-
-* `v1/serializers/` – domain data → JSON (DTO → serializer)
-* `v1/views/` – DRF APIView yoki ViewSet, UseCase’ni chaqiradi
-* `v1/urls.py` – API endpoint’lar
-
-**Qoidalar:**
-
-* View → UseCase (application layer) → Repository (infrastructure) → Domain
-* Serializer faqat data transform qiladi, biznes qoidani yozmaydi
-
----
-
-## 4️⃣ `cross_cutting/` — Shared concerns
-
-**Ma’qsad:** Monitoring, logging, validation, caching, auth.
-
-* `logging/logger.py` – structlog yoki standard logging
-* `auth/authentication.py` – JWT auth, token verification
-* `caching/cache_manager.py` – Redis yoki memcached wrapper
-* `messaging/event_bus.py` – domain event bus
-* `monitoring/metrics.py` – Prometheus metrics yoki custom
-* `error_handling/exceptions.py` – custom exceptions
-* `validation/validator.py` – shared validators
-
-> Bu layer barcha qatlamlar tomonidan ishlatilishi mumkin.
-
----
-
-## 5️⃣ `tests/` — Unit/Integration/E2E tests
-
-**Ma’qsad:** Testlarni qatlam bo‘yicha ajratish
-
-* `unit/` – domain + application layer tests
-* `integration/` – infrastructure + DB tests
-* `e2e/` – DRF API tests
-
----
-
-## 6️⃣ Qatlamlar orasidagi flow
-
-```text
-[ DRF View ] 
-       ↓
-[ UseCase / Application Service ]
-       ↓
-[ Repository Interface ]
-       ↓
-[ Infrastructure Implementation (Django ORM / External Services) ]
-       ↓
-[ Domain Entity / Aggregate ]
+```
+api/
+├── docs/              # API documentation (Swagger/OpenAPI configs)
+├── middlewares/       # Custom HTTP middlewares
+├── v1/                # Versioned API (v1)
+│   ├── serializers/   # DTOs / request-response schemas
+│   ├── views/         # Controllers / endpoints
+├── validators/        # Request-level validation
 ```
 
-* DRF View faqat request → UseCase → response
-* UseCase domain bilan ishlaydi va repository’ni chaqiradi
-* Domain toza biznes qoidalar, framework-agnostic
-* Infrastructure data persist qilish yoki external servislar bilan ishlash
+### Responsibility
+
+* Accept HTTP requests
+* Validate input
+* Call Application layer
+* Return HTTP response
+
+This layer may use:
+
+* **Django Software Foundation**
+* **Django**
+* **FastAPI**
+
+But switching frameworks should NOT affect business logic.
 
 ---
 
-## 7️⃣ Oddiy misol (User create)
+# 2️⃣ `config/` – Configuration Layer
 
-1️⃣ **Domain**: `User` entity
+```
+config/
+├── settings/
+```
+
+### Responsibility
+
+* Environment settings
+* App configuration
+* Database configs
+* External service configs
+
+This layer contains:
+
+* Dev / Prod configs
+* Security settings
+* Logging config
+
+---
+
+# 3️⃣ `core/` – Clean Architecture Core
+
+This is the most important part.
+
+It contains **Business Logic** and follows layered architecture:
+
+```
+core/
+├── application/
+├── domain/
+└── infrastructure/
+```
+
+---
+
+## 🧠 3.1 `domain/` – Enterprise Business Rules
+
+Pure business logic.
+
+No framework.
+No database.
+No Django/FastAPI imports.
+
+```
+domain/
+├── order/
+└── user/
+```
+
+### Contains
+
+* Entities
+* Value Objects
+* Domain Rules
+* Domain Exceptions
+
+Example:
+
+* `User`
+* `Order`
+* `Email`
+* Business validation logic
+
+👉 This is the most stable layer.
+
+---
+
+## ⚙ 3.2 `application/` – Use Cases Layer
+
+This layer orchestrates business logic.
+
+```
+application/
+├── interfaces/
+├── order/
+└── user/
+```
+
+### Contains
+
+* Use Cases (CreateUser, CreateOrder)
+* DTOs
+* Interfaces (Repository contracts)
+* Application services
+
+Example:
 
 ```python
-# core/domain/user/entities.py
-class User:
-    def __init__(self, user_id: int, email: str):
-        self.user_id = user_id
-        self.email = email
+class CreateUserUseCase:
+    def execute(self, data):
+        ...
 ```
 
-2️⃣ **Application UseCase**
+### Important Rule
 
-```python
-# core/application/user/use_cases.py
-from core.application.interfaces.repositories import UserRepository
+Application depends on:
 
-class CreateUser:
-    def __init__(self, repo: UserRepository):
-        self.repo = repo
+* Domain ✔
+* Interfaces ✔
 
-    def execute(self, email: str):
-        user = User(user_id=0, email=email)
-        self.repo.save(user)
-        return user
+But NOT on:
+
+* Database
+* Django ORM
+* External APIs
+
+---
+
+## 🏗 3.3 `infrastructure/` – External Implementations
+
+This layer implements technical details.
+
+```
+infrastructure/
+├── db/
+│   ├── models/
+│   └── repositories/
+└── services/
 ```
 
-3️⃣ **Infrastructure repository**
+### Contains
 
-```python
-# core/infrastructure/db/repositories/user_repository.py
-from core.application.interfaces.repositories import UserRepository
-from core.infrastructure.db.models.user_models import UserModel
+* ORM Models
+* Repository implementations
+* External APIs
+* Email/SMS integrations
+* Message broker implementations
 
-class DjangoUserRepository(UserRepository):
-    def save(self, user):
-        UserModel.objects.create(email=user.email)
+This layer depends on:
+
+* Application interfaces
+* Frameworks
+* Database drivers
+
+Example:
+
+* Django models
+* PostgreSQL repository
+* Redis cache client
+
+---
+
+# 4️⃣ `cross_cutting/` – Shared Concerns
+
+Reusable modules used across layers.
+
+```
+shared/
+├── auth/
+├── caching/
+├── error_handling/
+├── logging/
+├── messaging/
+├── monitoring/
+└── validation/
 ```
 
-4️⃣ **DRF View**
+### Responsibility
 
-```python
-# api/v1/views/user_views.py
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from core.application.user.use_cases import CreateUser
-from core.infrastructure.db.repositories.user_repository import DjangoUserRepository
+* Authentication
+* Logging
+* Exception handling
+* Caching
+* Monitoring
+* Messaging (RabbitMQ/Kafka)
+* Common validators
 
-class UserCreateView(APIView):
-    def post(self, request):
-        email = request.data["email"]
-        use_case = CreateUser(DjangoUserRepository())
-        user = use_case.execute(email)
-        return Response({"id": user.user_id, "email": user.email})
+These modules should not contain business logic.
+
+---
+
+# 5️⃣ `tests/` – Testing Strategy
+
+```
+tests/
+├── e2e/
+├── integration/
+└── unit/
 ```
 
-> Bu misolda **qatlamlar aniq ajratilgan**, unit test yozish oson.
+### Unit Tests
+
+* Test domain and application logic
+* No DB required
+
+### Integration Tests
+
+* Test infrastructure (DB, repositories)
+
+### E2E Tests
+
+* Full system testing
+* API → DB → Response
+
+---
+
+# 🔄 Dependency Rule (Very Important)
+
+Dependencies always point inward:
+
+```
+API → Application → Domain
+Infrastructure → Application
+```
+
+Domain depends on NOTHING.
+
+This ensures:
+
+* Easy framework switching
+* Easy DB switching
+* High testability
+
+---
+
+# 🔥 Why This Architecture Is Powerful
+
+✅ Business logic isolated
+✅ Easy to test
+✅ Scalable for microservices
+✅ Replaceable infrastructure
+✅ Framework-independent core
+
+---
+
+# 🎯 When To Use This Architecture
+
+Use this when:
+
+* Large project
+* Long-term maintenance required
+* Multiple developers
+* Microservice-ready system
+* Complex domain logic
+
+For small CRUD apps, this might be overkill.
+
+---
+
+# 📌 Summary
+
+| Layer          | Responsibility  | Depends On  |
+| -------------- | --------------- | ----------- |
+| API            | HTTP handling   | Application |
+| Application    | Use cases       | Domain      |
+| Domain         | Business rules  | Nothing     |
+| Infrastructure | DB / External   | Application |
+| Cross-cutting  | Shared concerns | All layers  |
+| Tests          | Testing         | All layers  |
 
 ---

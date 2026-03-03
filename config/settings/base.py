@@ -1,16 +1,24 @@
-from pathlib import Path
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 
+# Load .env file (default .env)
 load_dotenv()
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+# Project base directory
+BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
 
-SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
-DEBUG = False
+# Secret key from env or default
+SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-secret-key")
 
-ALLOWED_HOSTS = []
+# Default debug (overridden in dev/prod)
+DEBUG: bool = False
 
+# Default allowed hosts (overridden in dev/prod)
+ALLOWED_HOSTS: list[str] = []
+
+# Installed apps
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -18,14 +26,12 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
     "rest_framework",
     "corsheaders",
-
-    # infra app (models shu yerda bo‘ladi)
-    "core.infrastructure.db",
+    "core.user.infrastructure.db",
 ]
 
+# Middleware
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -37,12 +43,14 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "config.urls"
+# URL config
+ROOT_URLCONF: str = "config.urls"
 
+# Templates
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],  # ixtiyoriy
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -55,13 +63,17 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "config.wsgi.application"
+# WSGI application
+WSGI_APPLICATION: str = "config.wsgi.application"
 
-LANGUAGE_CODE = "en-us"
-TIME_ZONE = "UTC"
-USE_I18N = True
-USE_TZ = True
+# Localization
+LANGUAGE_CODE: str = "en-us"
+TIME_ZONE: str = "UTC"
+USE_I18N: bool = True
+USE_TZ: bool = True
 
-STATIC_URL = "static/"
+# Static files
+STATIC_URL: str = "static/"
 
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+# Default primary key field type
+DEFAULT_AUTO_FIELD: str = "django.db.models.BigAutoField"

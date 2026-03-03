@@ -1,12 +1,16 @@
-from .base import *
+# config/settings/development.py
 
-DEBUG = True
-ALLOWED_HOSTS = []
-CORS_ALLOW_ALL_ORIGINS = True
+from typing import Optional
 
-DATABASES = {
+from .base import BASE_DIR  # aniq import
+
+DEBUG: bool = True
+ALLOWED_HOSTS: list[str] = ["localhost", "127.0.0.1"]
+CORS_ALLOW_ALL_ORIGINS: bool = True
+
+DATABASES: dict[str, dict[str, Optional[str]]] = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",  # hozircha local
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": str(BASE_DIR / "db.sqlite3"),  # <-- Path -> str
     }
 }

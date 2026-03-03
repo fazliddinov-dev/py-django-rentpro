@@ -1,238 +1,351 @@
-Ajoyib! Keling, men senga **sening Clean Architecture + DDD + DRF skeleton** bo‘yicha **barcha qatlamlar ishlatiladigan real misol**ni ko‘rsataman.
+Great question 🔥
+I’ll show you a **Clean Architecture–style custom authentication** example based on your structure.
 
-Bu misol **“Order yaratish API”** bo‘ladi, va har bir layer ishtirok etadi:
+We’ll implement:
 
-* **Domain**: `Order` entity, `OrderId` value object, `OrderCreated` event
-* **Application**: `CreateOrderUseCase`, DTO
-* **Infrastructure**: Django model, repository implementation, external service (fake payment)
-* **API**: DRF view, serializer, URL
-* **Cross-cutting**: Logging, validation
+> ✅ Login with email + password
+> ✅ JWT generation
+> ✅ Clean separation (API → Application → Domain → Infrastructure)
 
 ---
 
-# 1️⃣ Domain layer
+# 📁 Final Structure (Relevant Parts)
 
-```python
-# core/domain/order/entities.py
-from core.domain.order.value_objects import OrderId, Price
+```text
+api/
+  v1/
+    views/
+      auth_view.py
+    serializers/
+      auth_serializer.py
 
-class Order:
-    def __init__(self, order_id: OrderId, user_id: int, price: Price):
-        self.order_id = order_id
-        self.user_id = user_id
-        self.price = price
+core/
+  user/
+    domain/
+      entities/
+        user.py
+      services/
+        password_hasher.py
+    application/
+      dto/
+        auth_dto.py
+      interfaces/
+        user_repository.py
+        token_service.py
+      use_cases/
+        login_user.py
+    infrastructure/
+      db/
+        models/
+          user_model.py
+        repositories/
+          django_user_repository.py
+      services/
+        jwt_token_service.py
+
+container/
+  user_container.py
 ```
 
+---
+
+# 1️⃣ Domain Layer (Pure Business Logic)
+
+## 📄 `domain/entities/user.py`
+
 ```python
-# core/domain/order/value_objects.py
-class OrderId:
-    def __init__(self, id: int):
+class User:
+    def __init__(self, id: int, email: str, password_hash: str):
         self.id = id
+        self.email = email
+        self.password_hash = password_hash
 
-class Price:
-    def __init__(self, amount: float):
-        if amount < 0:
-            raise ValueError("Price cannot be negative")
-        self.amount = amount
+    def verify_password(self, raw_password: str, hasher):
+        return hasher.verify(raw_password, self.password_hash)
 ```
 
-```python
-# core/domain/order/events.py
-class OrderCreated:
-    def __init__(self, order_id: int):
-        self.order_id = order_id
-```
+Domain does NOT know:
+
+* Django
+* JWT
+* ORM
 
 ---
 
-# 2️⃣ Application layer
+## 📄 `domain/services/password_hasher.py`
 
 ```python
-# core/application/order/dtos.py
-from dataclasses import dataclass
-
-@dataclass
-class CreateOrderDTO:
-    user_id: int
-    amount: float
-```
-
-```python
-# core/application/interfaces/repositories.py
 from abc import ABC, abstractmethod
-from core.domain.order.entities import Order
 
-class OrderRepository(ABC):
+class PasswordHasher(ABC):
     @abstractmethod
-    def save(self, order: Order):
+    def verify(self, raw_password: str, hashed_password: str) -> bool:
         pass
 ```
 
+Domain only defines contract.
+
+---
+
+# 2️⃣ Application Layer
+
+## 📄 `application/interfaces/user_repository.py`
+
 ```python
-# core/application/order/use_cases.py
-from core.application.interfaces.repositories import OrderRepository
-from core.application.order.dtos import CreateOrderDTO
-from core.domain.order.entities import Order
-from core.domain.order.value_objects import OrderId, Price
-from core.domain.order.events import OrderCreated
+from abc import ABC, abstractmethod
+from core.user.domain.entities.user import User
 
-class CreateOrderUseCase:
-    def __init__(self, order_repo: OrderRepository, logger=None):
-        self.order_repo = order_repo
-        self.logger = logger
+class UserRepository(ABC):
 
-    def execute(self, dto: CreateOrderDTO) -> OrderCreated:
-        order_id = OrderId(id=0)  # real DB assign qiladi
-        price = Price(amount=dto.amount)
-        order = Order(order_id, dto.user_id, price)
-        self.order_repo.save(order)
-        if self.logger:
-            self.logger.info(f"Order created for user {dto.user_id} with amount {dto.amount}")
-        return OrderCreated(order_id=order_id.id)
+    @abstractmethod
+    def get_by_email(self, email: str) -> User | None:
+        pass
 ```
 
 ---
 
-# 3️⃣ Infrastructure layer
+## 📄 `application/interfaces/token_service.py`
 
 ```python
-# core/infrastructure/db/models/order_models.py
+from abc import ABC, abstractmethod
+
+class TokenService(ABC):
+
+    @abstractmethod
+    def generate_access_token(self, user_id: int) -> str:
+        pass
+```
+
+---
+
+## 📄 `application/dto/auth_dto.py`
+
+```python
+class LoginInputDTO:
+    def __init__(self, email: str, password: str):
+        self.email = email
+        self.password = password
+
+
+class LoginOutputDTO:
+    def __init__(self, access_token: str):
+        self.access_token = access_token
+```
+
+---
+
+## 📄 `application/use_cases/login_user.py`
+
+```python
+class LoginUserUseCase:
+
+    def __init__(self, user_repo, token_service, password_hasher):
+        self.user_repo = user_repo
+        self.token_service = token_service
+        self.password_hasher = password_hasher
+
+    def execute(self, input_dto):
+        user = self.user_repo.get_by_email(input_dto.email)
+
+        if not user:
+            raise Exception("Invalid credentials")
+
+        if not user.verify_password(input_dto.password, self.password_hasher):
+            raise Exception("Invalid credentials")
+
+        token = self.token_service.generate_access_token(user.id)
+
+        return token
+```
+
+⚡ Notice:
+
+* No Django
+* No ORM
+* No JWT
+* No HTTP
+
+Pure use case.
+
+---
+
+# 3️⃣ Infrastructure Layer
+
+Assume we use:
+
+* **Django**
+* **PyJWT**
+
+---
+
+## 📄 `infrastructure/db/models/user_model.py`
+
+```python
 from django.db import models
 
-class OrderModel(models.Model):
-    user_id = models.IntegerField()
-    amount = models.FloatField()
-    created_at = models.DateTimeField(auto_now_add=True)
-```
-
-```python
-# core/infrastructure/db/repositories/order_repository.py
-from core.application.interfaces.repositories import OrderRepository
-from core.domain.order.entities import Order
-from core.infrastructure.db.models.order_models import OrderModel
-
-class DjangoOrderRepository(OrderRepository):
-    def save(self, order: Order):
-        obj = OrderModel.objects.create(
-            user_id=order.user_id,
-            amount=order.price.amount
-        )
-        # domain order_id bilan yangilanishi mumkin
-        order.order_id.id = obj.id
-```
-
-```python
-# core/infrastructure/services/external_service.py
-class PaymentService:
-    def charge(self, user_id: int, amount: float) -> bool:
-        # Fake payment processing
-        print(f"Charging user {user_id} amount {amount}")
-        return True
+class UserModel(models.Model):
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=255)
 ```
 
 ---
 
-# 4️⃣ Cross-cutting layer
+## 📄 `infrastructure/db/repositories/django_user_repository.py`
 
 ```python
-# cross_cutting/logging/logger.py
-import logging
+from core.user.domain.entities.user import User
+from core.user.application.interfaces.user_repository import UserRepository
+from .models.user_model import UserModel
 
-logger = logging.getLogger("app_logger")
-logging.basicConfig(level=logging.INFO)
-```
 
-```python
-# cross_cutting/validation/validator.py
-def validate_positive(value: float, name: str):
-    if value <= 0:
-        raise ValueError(f"{name} must be positive")
+class DjangoUserRepository(UserRepository):
+
+    def get_by_email(self, email: str):
+        try:
+            obj = UserModel.objects.get(email=email)
+            return User(
+                id=obj.id,
+                email=obj.email,
+                password_hash=obj.password
+            )
+        except UserModel.DoesNotExist:
+            return None
 ```
 
 ---
 
-# 5️⃣ API layer (DRF)
+## 📄 `infrastructure/services/jwt_token_service.py`
 
 ```python
-# api/v1/serializers/order_serializers.py
+import jwt
+from django.conf import settings
+from core.user.application.interfaces.token_service import TokenService
+
+
+class JWTTokenService(TokenService):
+
+    def generate_access_token(self, user_id: int) -> str:
+        payload = {"user_id": user_id}
+        return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
+```
+
+---
+
+## 📄 `infrastructure/services/django_password_hasher.py`
+
+```python
+from django.contrib.auth.hashers import check_password
+from core.user.domain.services.password_hasher import PasswordHasher
+
+
+class DjangoPasswordHasher(PasswordHasher):
+
+    def verify(self, raw_password: str, hashed_password: str) -> bool:
+        return check_password(raw_password, hashed_password)
+```
+
+---
+
+# 4️⃣ Container (Dependency Injection)
+
+## 📄 `container/user_container.py`
+
+```python
+from core.user.application.use_cases.login_user import LoginUserUseCase
+from core.user.infrastructure.db.repositories.django_user_repository import DjangoUserRepository
+from core.user.infrastructure.services.jwt_token_service import JWTTokenService
+from core.user.infrastructure.services.django_password_hasher import DjangoPasswordHasher
+
+
+def login_user_use_case():
+    return LoginUserUseCase(
+        user_repo=DjangoUserRepository(),
+        token_service=JWTTokenService(),
+        password_hasher=DjangoPasswordHasher()
+    )
+```
+
+Now everything is wired properly.
+
+---
+
+# 5️⃣ API Layer
+
+## 📄 `api/v1/serializers/auth_serializer.py`
+
+```python
 from rest_framework import serializers
 
-class CreateOrderSerializer(serializers.Serializer):
-    user_id = serializers.IntegerField()
-    amount = serializers.FloatField()
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField()
 ```
 
+---
+
+## 📄 `api/v1/views/auth_view.py`
+
 ```python
-# api/v1/views/order_views.py
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from core.application.order.use_cases import CreateOrderUseCase
-from core.application.order.dtos import CreateOrderDTO
-from core.infrastructure.db.repositories.order_repository import DjangoOrderRepository
-from cross_cutting.logging.logger import logger
-from cross_cutting.validation.validator import validate_positive
+from container.user_container import login_user_use_case
+from core.user.application.dto.auth_dto import LoginInputDTO
+from .serializers.auth_serializer import LoginSerializer
 
-from api.v1.serializers.order_serializers import CreateOrderSerializer
 
-class CreateOrderView(APIView):
+class LoginView(APIView):
+
     def post(self, request):
-        serializer = CreateOrderSerializer(data=request.data)
+        serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user_id = serializer.validated_data["user_id"]
-        amount = serializer.validated_data["amount"]
 
-        # cross-cutting validation
-        validate_positive(amount, "amount")
+        dto = LoginInputDTO(**serializer.validated_data)
 
-        dto = CreateOrderDTO(user_id=user_id, amount=amount)
-        use_case = CreateOrderUseCase(DjangoOrderRepository(), logger)
-        event = use_case.execute(dto)
-        return Response({"order_id": event.order_id})
-```
+        use_case = login_user_use_case()
+        token = use_case.execute(dto)
 
-```python
-# api/v1/urls.py
-from django.urls import path
-from api.v1.views.order_views import CreateOrderView
-
-urlpatterns = [
-    path("orders/", CreateOrderView.as_view(), name="create_order"),
-]
+        return Response({"access_token": token})
 ```
 
 ---
 
-# 6️⃣ Flow diagram
+# 🔄 Flow
 
 ```text
-[ POST /api/v1/orders/ ]  <-- DRF View
-       ↓
-[ CreateOrderUseCase ]    <-- Application layer
-       ↓
-[ DjangoOrderRepository ] <-- Infrastructure
-       ↓
-[ OrderModel ]           <-- DB (ORM)
-       ↓
-[ OrderCreated Event ]   <-- Domain + Cross-cutting
+HTTP Request
+   ↓
+APIView
+   ↓
+UseCase
+   ↓
+Repository
+   ↓
+Database
+   ↓
+Token Service
+   ↓
+Response
 ```
 
-* **DRF view**: faqat request → serializer → use case
-* **Use case**: domain entity yaratadi, repository orqali DB ga yozadi, logger orqali log qiladi
-* **Repository**: domain → ORM implementatsiyasi
-* **Domain**: pure business rules, validation
-* **Cross-cutting**: logger + validation
+Clean. Replaceable. Testable.
 
 ---
 
-💡 **Afzalliklar**:
+# 🧠 Why This Is Powerful
 
-* Har layer mustaqil: unit test yozish oson
-* Domain layer framework-agnostic
-* Application layer testable, DB va DRF’dan mustaqil
-* Infrastructure layer’ni kelajakda microservice sifatida ajratish mumkin
+You can now:
+
+* Replace Django with FastAPI → no core change
+* Replace JWT → only token service changes
+* Replace DB → only repository changes
+* Unit test LoginUserUseCase without Django
 
 ---
 
-Agar xohlasang, men **shu misolni Django admin va migrations bilan to‘liq ishlaydigan holatda** berib, sen `python manage.py runserver` qilganingda endpoint ishlashini ko‘rsataman.
+If you want next, I can show:
 
-Shuni qilaylikmi?
+* Custom authentication middleware that validates JWT
+* Refresh token implementation
+* Role-based authorization (RBAC)
+* Or convert this to FastAPI version 🚀

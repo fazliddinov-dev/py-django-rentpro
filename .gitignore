@@ -13,6 +13,8 @@ media
 # Virtual Environment
 venv/
 .env
+.env.dev
+.env.prod
 
 # IDEs
 .idea/
@@ -51,6 +53,8 @@ celerybeat.pid
 
 # Environments
 .env
+.env.dev
+.env.prod
 .venv
 env/
 venv/
