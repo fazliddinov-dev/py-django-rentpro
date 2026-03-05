@@ -1,3 +1,4 @@
+from django.core.validators import MinValueValidator
 from django.db import models
 
 
@@ -12,16 +13,21 @@ class SubscriptionProducts(models.Model):
         (YEAR, "Yil"),
     ]
 
-    product_name = models.CharField(max_length=255, unique=True)
-    regular_price = models.IntegerField()
-    sale_price = models.IntegerField()
-    sms_count = models.IntegerField()
-    stock_count = models.IntegerField()
-    subscription_length = models.IntegerField()
-    subscription_period = models.CharField(choices=SUBSCRIPTION_PERIOD_CHOICES)
-    subscription_info = models.TextField()
+    name = models.CharField(max_length=255, unique=True)
+
+    regular_price = models.PositiveIntegerField()
+    sale_price = models.PositiveIntegerField()
+    sms_count = models.PositiveIntegerField()
+    stock_count = models.PositiveIntegerField()
+    length = models.PositiveIntegerField()
+
+    period = models.CharField(choices=SUBSCRIPTION_PERIOD_CHOICES, max_length=255)
+
+    info = models.TextField()
+
     is_visible = models.BooleanField(default=True)
-    order = models.IntegerField()
+
+    order = models.PositiveIntegerField()
 
     def __str__(self):
-        return self.product_name
+        return self.name

@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     "apps.user",
+    "apps.subscription",
 ]
 
 # Middleware
