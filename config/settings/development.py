@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from .base import *  # noqa: F403,F405
+from .base import *
 
 DEBUG: bool = True  # type: ignore[no-redef]
 ALLOWED_HOSTS: list[str] = ["localhost", "127.0.0.1"]  # type: ignore[no-redef]
