@@ -3,7 +3,7 @@ from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 def create_tokens_for_super_admin(username: str):
     """
-    Manually create JWT tokens for super admin without a DB user
+    Manually create JWT tokens for super admin
     """
     # Create refresh token
     refresh = RefreshToken()

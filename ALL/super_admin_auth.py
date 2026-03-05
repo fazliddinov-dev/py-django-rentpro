@@ -1,8 +1,7 @@
+from core.user.application.use_cases.super_admin_login import SuperAdminLoginUseCase
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from core.user.application.use_cases.super_admin_login import SuperAdminLoginUseCase
 
 from ..serializers.user_serializers import LoginSerializer
 
