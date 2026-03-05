@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -77,3 +78,21 @@ STATIC_URL: str = "static/"
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD: str = "django.db.models.BigAutoField"
+REST_FRAMEWORK: dict = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    )
+}
+
+SIMPLE_JWT: dict = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": False,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
+
+SUPER_ADMIN_USERNAME: str = os.getenv("SUPER_ADMIN_USERNAME")
+SUPER_ADMIN_PASSWORD: str = os.getenv("SUPER_ADMIN_PASSWORD")

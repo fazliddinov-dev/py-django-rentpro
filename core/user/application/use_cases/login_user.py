@@ -1,6 +1,3 @@
-from rest_framework.exceptions import AuthenticationFailed
-
-
 class LoginUserUseCase:
     def __init__(self, user_repo, token_service, password_hasher):
         self.user_repo = user_repo
@@ -11,10 +8,10 @@ class LoginUserUseCase:
         user = self.user_repo.get_by_email(input_dto.email)
 
         if not user:
-            raise AuthenticationFailed("Invalid credentials")
+            raise Exception("Invalid credentials")
 
         if not user.verify_password(input_dto.password, self.password_hasher):
-            raise AuthenticationFailed("Invalid credentials")
+            raise Exception("Invalid credentials")
 
         token = self.token_service.generate_access_token(user.id)
 

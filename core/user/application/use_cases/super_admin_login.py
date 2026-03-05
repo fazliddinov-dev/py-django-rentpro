@@ -1,0 +1,16 @@
+from django.conf import settings
+
+from shared.auth.jwt_utils import create_tokens_for_super_admin
+
+
+class SuperAdminLoginUseCase:
+    def execute(self, username: str, password: str):
+        if (
+            username == settings.SUPER_ADMIN_USERNAME
+            and password == settings.SUPER_ADMIN_PASSWORD
+        ):
+            return create_tokens_for_super_admin(username)
+        print(
+            f"Current credentials = {settings.SUPER_ADMIN_USERNAME},{settings.SUPER_ADMIN_PASSWORD} "
+        )
+        return None
