@@ -1,5 +1,5 @@
 from django.core.validators import MinValueValidator
-from django.db import models
+from django.db import models, transaction
 
 
 class SubscriptionProducts(models.Model):
@@ -27,7 +27,21 @@ class SubscriptionProducts(models.Model):
 
     is_visible = models.BooleanField(default=True)
 
-    order = models.PositiveIntegerField()
+    order = models.PositiveIntegerField(unique=True)
+
+    def save(self, *args, **kwargs):
+        if not self.pk and not self.order:
+            # atomic block ensures no race condition
+            with transaction.atomic():
+                # lock the table rows for update
+                max_order = (
+                    SubscriptionProducts.objects.select_for_update().aggregate(
+                        models.Max("order")
+                    )["order__max"]
+                    or 0
+                )
+                self.order = max_order + 1
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name

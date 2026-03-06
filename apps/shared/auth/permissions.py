@@ -6,4 +6,5 @@ class IsSuperAdmin(BasePermission):
         if not request.user:
             return False
 
-        return request.user.get("role") == "super_admin"
+        # Access attribute directly
+        return getattr(request.user, "role", None) == "super_admin"
