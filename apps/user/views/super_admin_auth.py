@@ -9,18 +9,26 @@ from ..serializers import LoginSerializer
 
 class SuperAdminLoginView(APIView):
     """
-    Super admin login endpoint using credentials from .env and SimpleJWT
+    Super admin login endpoint using credentials from .env and JWT
     """
+
+    authentication_classes = []
+    permission_classes = []
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        username = serializer.validated_data["username"]
-        password = serializer.validated_data["password"]
-        use_case = SuperAdminLoginService()
-        result = use_case.execute(username, password)
-        if result:
-            return Response(result, status=status.HTTP_200_OK)
-        return Response(
-            {"detail": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
-        )
+
+        username = serializer.validated_data.get("username")
+        password = serializer.validated_data.get("password")
+
+        service = SuperAdminLoginService()
+        result = service.execute(username=username, password=password)
+
+        if not result:
+            return Response(
+                {"detail": "Invalid credentials"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        return Response(result, status=status.HTTP_200_OK)
