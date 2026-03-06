@@ -1,4 +1,3 @@
-# apps/shared/caching/decorators.py
 from functools import wraps
 from urllib.parse import urlencode
 

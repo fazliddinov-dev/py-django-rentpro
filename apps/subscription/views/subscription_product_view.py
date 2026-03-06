@@ -1,6 +1,6 @@
-# apps/subscription/views.py
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
 from apps.shared.auth.authentication import SuperAdminJWTAuthentication
@@ -37,6 +37,12 @@ class SubscriptionProductViewSet(ModelViewSet):
         "period",
     ]
     ordering = ["-regular_price"]
+
+    def get_permissions(self):
+        self.permission_classes = [IsAuthenticated]
+        if self.request.method in ["PUT", "PATCH", "DELETE"]:
+            self.permission_classes = [IsSuperAdmin]
+        return super().get_permissions()
 
     @versioned_cache(list_version_key=LIST_VERSION_KEY, ttl=60 * 60 * 24)
     def list(self, request, *args, **kwargs):

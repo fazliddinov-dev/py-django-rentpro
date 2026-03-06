@@ -1,29 +1,31 @@
 import jwt
 from django.conf import settings
+from rest_framework import exceptions
 from rest_framework.authentication import BaseAuthentication
-from rest_framework.exceptions import AuthenticationFailed
+
+from .models import SuperAdminUser
 
 
 class SuperAdminJWTAuthentication(BaseAuthentication):
     def authenticate(self, request):
-        auth_header = request.headers.get("Authorization")
-
-        if not auth_header:
+        token = request.headers.get("Authorization")
+        if not token:
             return None
 
         try:
-            prefix, token = auth_header.split(" ")
-        except ValueError:
-            raise AuthenticationFailed("Invalid Authorization header")
-
-        if prefix.lower() != "bearer":
-            raise AuthenticationFailed("Invalid token prefix")
-
-        try:
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            payload = jwt.decode(
+                token.split(" ")[1], settings.SECRET_KEY, algorithms=["HS256"]
+            )
         except jwt.ExpiredSignatureError:
-            raise AuthenticationFailed("Token expired")
+            raise exceptions.AuthenticationFailed("Token expired")
         except jwt.InvalidTokenError:
-            raise AuthenticationFailed("Invalid token")
+            raise exceptions.AuthenticationFailed("Invalid token")
 
-        return (payload, payload)
+        # Only super admin role
+        role = payload.get("role")
+        if role != "super_admin":
+            raise exceptions.AuthenticationFailed("Unauthorized")
+
+        # Return user-like object
+        user = SuperAdminUser(role=role)
+        return (user, token)
