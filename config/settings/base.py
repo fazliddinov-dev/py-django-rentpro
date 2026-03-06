@@ -109,7 +109,8 @@ DEFAULT_AUTO_FIELD: str = "django.db.models.BigAutoField"
 REST_FRAMEWORK: dict = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
-    )
+    ),
+    "EXCEPTION_HANDLER": "apps.shared.exceptions.handlers.custom_exception_handler",
 }
 
 SIMPLE_JWT: dict = {

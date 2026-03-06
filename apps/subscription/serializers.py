@@ -13,17 +13,14 @@ class SubscriptionProductSerializer(serializers.ModelSerializer):
         }
 
     def update(self, instance, validated_data):
-        # Allow order update if client provides it
-        if "order" in self.initial_data:
-            instance.order = self.initial_data["order"]
+        # If 'order' is provided in the request data, allow updating it
+        request = self.context.get("request")
+        if request and "order" in request.data:
+            instance.order = request.data["order"]
 
-        try:
-            instance.save()
-        except IntegrityError as e:  # <-- use IntegrityError, not InterruptedError
-            if "unique" in str(e).lower() and "order" in str(e).lower():
-                raise serializers.ValidationError(
-                    {"order": "This order value already exists."}
-                )
-            raise e
+        # Update all other validated fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
 
+        instance.save()
         return instance
