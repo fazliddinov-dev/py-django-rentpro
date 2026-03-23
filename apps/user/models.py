@@ -1,86 +1,60 @@
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
-class Company(models.Model):
-    name = models.CharField(max_length=255)
-    inn = models.CharField(max_length=50, unique=True)
-    mfo = models.CharField(max_length=50)
-    website = models.URLField(max_length=255, blank=True, null=True)
-    bank_number = models.CharField(max_length=50)
+class User(AbstractUser):
+    class Role(models.TextChoices):
+        OWNER = "owner", "Owner"
+        STAFF = "staff", "Staff"
+        CUSTOMER = "customer", "Customer"
 
-    def __str__(self):
-        return self.name
-
-
-class Vendor(models.Model):
     full_name = models.CharField(max_length=255)
-    email = models.EmailField(unique=True)
-    phone_number = models.CharField(max_length=255, unique=True)
-    password = models.CharField(max_length=255)
+    phone_number = models.CharField(max_length=20, unique=True)
 
+    role = models.CharField(max_length=20, choices=Role.choices)
+
+    # Tenant
     company = models.ForeignKey(
-        Company, on_delete=models.CASCADE, related_name="vendors"
+        "Company",
+        on_delete=models.CASCADE,
+        related_name="users",
+        null=True,
+        blank=True,
     )
 
-    def __str__(self):
-        return self.full_name
-
-
-class TeamMember(models.Model):
-    class RoleChoices(models.TextChoices):
-        MANAGER = "manager", "Manager"
-        WAREHOUSE_MANAGER = "warehouse_manager", "Warehouse manager"
-        ASSISTANT = "assistant", "Assistant"
-        DRIVER = "driver", "Driver"
-
-    vendor = models.ForeignKey(
-        Vendor, on_delete=models.CASCADE, related_name="team_members"
-    )
-    full_name = models.CharField(max_length=255)
-    email = models.EmailField()
-    phone_number = models.CharField(max_length=255)
-    password = models.CharField(max_length=255)
-    role = models.CharField(max_length=20, choices=RoleChoices)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["vendor", "email"], name="unique_team_email_per_vendor"
-            ),
-            models.UniqueConstraint(
-                fields=["vendor", "phone_number"], name="unique_team_phone_per_vendor"
-            ),
-        ]
+    USERNAME_FIELD = "username"  # or change to email if you want
+    REQUIRED_FIELDS = ["email"]
 
     def __str__(self):
         return f"{self.full_name} ({self.role})"
 
+class Company(models.Model):
+    name = models.CharField(max_length=255)
+    business_type = models.CharField(max_length=100, blank=True)
+    timezone = models.CharField(max_length=50, default="UTC")
+    address = models.TextField(blank=True)
 
-class Customer(models.Model):
-    class TypeChoices(models.TextChoices):
-        BAD = "bad", "Bad"
-        GOOD = "good", "Good"
-        PERFECT = "perfect", "Perfect"
-
-    vendor = models.ForeignKey(
-        Vendor, on_delete=models.CASCADE, related_name="customers"
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="owned_companies",
     )
-    full_name = models.CharField(max_length=255)
-    email = models.EmailField(blank=True, null=True)
-    phone_number = models.CharField(max_length=255)
 
-    customer_type = models.CharField(
-        max_length=20, choices=TypeChoices, default=TypeChoices.GOOD
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+class CustomerProfile(models.Model):
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="customer_profile"
     )
+    company = models.ForeignKey(
+        Company, on_delete=models.CASCADE, related_name="customers"
+    )
+
     is_blacklist = models.BooleanField(default=False)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["vendor", "phone_number"],
-                name="unique_customer_phone_per_vendor",
-            )
-        ]
-
-    def __str__(self):
-        return self.full_name
+        unique_together = ("company", "user")

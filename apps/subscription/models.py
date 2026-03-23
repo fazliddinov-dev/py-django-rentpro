@@ -1,8 +1,8 @@
-from django.core.validators import MinValueValidator
 from django.db import models, transaction
+from ..user.models import Company
 
 
-class SubscriptionProducts(models.Model):
+class Plan(models.Model):
     DAY = "day"
     MONTH = "month"
     YEAR = "year"
@@ -45,3 +45,32 @@ class SubscriptionProducts(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Subscription(models.Model):
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Active"
+        EXPIRED = "expired", "Expired"
+        CANCELLED = "cancelled", "Cancelled"
+
+    company = models.ForeignKey(
+        Company, on_delete=models.CASCADE, related_name="subscriptions"
+    )
+    plan = models.ForeignKey(Plan, on_delete=models.PROTECT)
+
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["company"],
+                condition=models.Q(status="active"),
+                name="one_active_subscription_per_company"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.company} - {self.plan}"
