@@ -127,3 +127,30 @@ SUPER_ADMIN_USERNAME: str = os.getenv("SUPER_ADMIN_USERNAME")
 SUPER_ADMIN_PASSWORD: str = os.getenv("SUPER_ADMIN_PASSWORD")
 
 AUTH_USER_MODEL = "user.User"
+
+CELERY_BROKER_URL = "redis://localhost:26379/1"
+CELERY_RESULT_BACKEND = (
+    "redis://localhost:26379/1"  # optional, if you need task results
+)
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "Asia/Tashkent"
+
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = os.getenv("EMAIL_HOST")
+EMAIL_PORT = os.getenv("EMAIL_PORT")
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:26379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    }
+}

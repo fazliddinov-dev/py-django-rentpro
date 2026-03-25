@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import User
+from .models import EmailOTP, User
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -26,3 +26,15 @@ class UserListSerializer(serializers.ModelSerializer):
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=20)
     password = serializers.CharField(max_length=20)
+
+
+class SendOTPSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmailOTP
+        fields = ["email"]
+
+
+class VerifyOTPSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmailOTP
+        fields = ["email", "code"]

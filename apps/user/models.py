@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 
 
 class User(AbstractUser):
@@ -64,3 +65,14 @@ class CustomerProfile(models.Model):
 
     class Meta:
         unique_together = ("company", "user")
+
+
+class EmailOTP(models.Model):
+    email = models.EmailField()
+    code = models.CharField(max_length=6)
+    is_used = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    def is_expired(self):
+        return timezone.now() > self.created_at + timezone.timedelta(minutes=2)
