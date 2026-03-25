@@ -32,6 +32,7 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.full_name} ({self.role})"
 
+
 class Company(models.Model):
     name = models.CharField(max_length=255)
     business_type = models.CharField(max_length=100, blank=True)
@@ -49,6 +50,7 @@ class Company(models.Model):
 
     def __str__(self):
         return self.name
+
 
 class CustomerProfile(models.Model):
     user = models.OneToOneField(

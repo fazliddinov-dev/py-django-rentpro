@@ -11,9 +11,7 @@ class SubscriptionConfig(AppConfig):
 
         from .models import Plan
 
-        LIST_VERSION_KEY, DETAIL_VERSION_KEY = generate_version_keys(
-            "Plan"
-        )
+        LIST_VERSION_KEY, DETAIL_VERSION_KEY = generate_version_keys("Plan")
 
         register_versioned_cache_signals(
             sender=Plan,

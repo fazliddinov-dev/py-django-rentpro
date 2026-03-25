@@ -4,7 +4,6 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-
 # Load .env file (default .env)
 load_dotenv()
 
@@ -15,7 +14,7 @@ BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
 SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-secret-key")
 
 # Default debug (overridden in dev/prod)
-DEBUG: bool = True
+DEBUG: bool = False
 
 # Default allowed hosts (overridden in dev/prod)
 ALLOWED_HOSTS: list[str] = []

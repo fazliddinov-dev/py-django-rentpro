@@ -1,4 +1,5 @@
 from django.db import models, transaction
+
 from ..user.models import Company
 
 
@@ -61,14 +62,16 @@ class Subscription(models.Model):
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
 
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.ACTIVE
+    )
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
                 fields=["company"],
                 condition=models.Q(status="active"),
-                name="one_active_subscription_per_company"
+                name="one_active_subscription_per_company",
             )
         ]
 
