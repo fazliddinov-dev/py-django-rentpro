@@ -7,7 +7,7 @@ import dj_database_url
 
 from .base import *
 
-DEBUG: bool = False
+DEBUG: bool = True
 ALLOWED_HOSTS = ["*"]
 CORS_ALLOW_ALL_ORIGINS: bool = True
 
