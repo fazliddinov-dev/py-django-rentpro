@@ -5,9 +5,11 @@ from typing import Optional
 
 import dj_database_url
 
+from .base import *
+
 DEBUG: bool = False
 ALLOWED_HOSTS = ["*"]
-ROOT_URLCONF: str = "config.urls"
+CORS_ALLOW_ALL_ORIGINS: bool = True
 
 
 DATABASES = {"default": dj_database_url.config(default=os.getenv("DATABASE_URL"))}
