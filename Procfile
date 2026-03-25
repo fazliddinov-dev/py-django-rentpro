@@ -1,1 +1,1 @@
-web: gunicorn py-django-rentpro.wsgi
+web: gunicorn config.wsgi:application
