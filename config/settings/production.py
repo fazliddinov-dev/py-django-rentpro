@@ -3,18 +3,15 @@
 import os
 from typing import Optional
 
-DEBUG: bool = False
-ALLOWED_HOSTS: list[str] = os.getenv("ALLOWED_HOSTS", "").split(",")
+import dj_database_url
 
-DATABASES: dict[str, dict[str, Optional[str]]] = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME"),
-        "USER": os.getenv("DB_USER"),
-        "PASSWORD": os.getenv("DB_PASSWORD"),
-        "HOST": os.getenv("DB_HOST", "localhost"),
-        "PORT": os.getenv("DB_PORT", "5432"),
-    }
+DEBUG: bool = False
+ALLOWED_HOSTS = ["*"]
+
+DATABASES = {
+    "default": dj_database_url.config(
+        default=os.getenv("DATABASE_URL"), conn_max_age=600
+    )
 }
 
 # Qo‘shimcha security settings
