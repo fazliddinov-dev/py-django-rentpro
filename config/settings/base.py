@@ -4,6 +4,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+
 # Load .env file (default .env)
 load_dotenv()
 
@@ -14,7 +15,7 @@ BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
 SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-secret-key")
 
 # Default debug (overridden in dev/prod)
-DEBUG: bool = False
+DEBUG: bool = True
 
 # Default allowed hosts (overridden in dev/prod)
 ALLOWED_HOSTS: list[str] = []
@@ -109,8 +110,7 @@ DEFAULT_AUTO_FIELD: str = "django.db.models.BigAutoField"
 REST_FRAMEWORK: dict = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
-    ),
-    "EXCEPTION_HANDLER": "apps.shared.exceptions.handlers.custom_exception_handler",
+    )
 }
 
 SIMPLE_JWT: dict = {
@@ -125,3 +125,5 @@ SIMPLE_JWT: dict = {
 
 SUPER_ADMIN_USERNAME: str = os.getenv("SUPER_ADMIN_USERNAME")
 SUPER_ADMIN_PASSWORD: str = os.getenv("SUPER_ADMIN_PASSWORD")
+
+AUTH_USER_MODEL = "user.User"

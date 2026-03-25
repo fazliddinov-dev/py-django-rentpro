@@ -9,14 +9,14 @@ class SubscriptionConfig(AppConfig):
         from apps.shared.caching.helpers import generate_version_keys
         from apps.shared.caching.signals import register_versioned_cache_signals
 
-        from .models import SubscriptionProducts
+        from .models import Plan
 
         LIST_VERSION_KEY, DETAIL_VERSION_KEY = generate_version_keys(
-            "SubscriptionProducts"
+            "Plan"
         )
 
         register_versioned_cache_signals(
-            sender=SubscriptionProducts,
+            sender=Plan,
             list_version_key=LIST_VERSION_KEY,
             detail_version_key=DETAIL_VERSION_KEY,
         )

@@ -1,12 +1,12 @@
 from django.db import IntegrityError
 from rest_framework import serializers
 
-from .models import SubscriptionProducts
+from .models import Plan
 
 
-class SubscriptionProductSerializer(serializers.ModelSerializer):
+class Planserializer(serializers.ModelSerializer):
     class Meta:
-        model = SubscriptionProducts
+        model = Plan
         fields = "__all__"
         extra_kwargs = {
             "order": {"read_only": True}  # ignored on create, returned in response

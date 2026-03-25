@@ -10,15 +10,15 @@ from apps.shared.caching.decorators import versioned_cache
 from apps.shared.caching.helpers import generate_version_keys
 
 from ..filters import SubscriptionProductFilter
-from ..models import SubscriptionProducts
-from ..serializers import SubscriptionProductSerializer
+from ..models import Plan
+from ..serializers import Planserializer
 
-LIST_VERSION_KEY, DETAIL_VERSION_KEY = generate_version_keys("SubscriptionProducts")
+LIST_VERSION_KEY, DETAIL_VERSION_KEY = generate_version_keys("Plan")
 
 
 class SubscriptionProductViewSet(ModelViewSet):
-    queryset = SubscriptionProducts.objects.all()
-    serializer_class = SubscriptionProductSerializer
+    queryset = Plan.objects.all()
+    serializer_class = Planserializer
     authentication_classes = [SuperAdminJWTAuthentication]
     permission_classes = [IsSuperAdmin]
     pagination_class = None

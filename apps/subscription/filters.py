@@ -1,12 +1,12 @@
 import django_filters
 from rest_framework import filters
 
-from .models import SubscriptionProducts
+from .models import Plan
 
 
 class SubscriptionProductFilter(django_filters.FilterSet):
     class Meta:
-        model = SubscriptionProducts
+        model = Plan
         fields = {
             "name": ["exact", "icontains"],
             "regular_price": ["exact", "gte", "lte"],

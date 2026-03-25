@@ -8,6 +8,10 @@ class User(AbstractUser):
         STAFF = "staff", "Staff"
         CUSTOMER = "customer", "Customer"
 
+    username = None
+
+    email = models.EmailField(unique=True)
+
     full_name = models.CharField(max_length=255)
     phone_number = models.CharField(max_length=20, unique=True)
 
@@ -22,8 +26,8 @@ class User(AbstractUser):
         blank=True,
     )
 
-    USERNAME_FIELD = "username"  # or change to email if you want
-    REQUIRED_FIELDS = ["email"]
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = []
 
     def __str__(self):
         return f"{self.full_name} ({self.role})"

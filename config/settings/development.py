@@ -5,7 +5,7 @@ from typing import Optional
 from .base import *
 
 DEBUG: bool = True  # type: ignore[no-redef]
-ALLOWED_HOSTS: list[str] = ["localhost", "127.0.0.1"]  # type: ignore[no-redef]
+ALLOWED_HOSTS: list[str] = []
 CORS_ALLOW_ALL_ORIGINS: bool = True
 
 DATABASES: dict[str, dict[str, Optional[str]]] = {

@@ -17,6 +17,7 @@ dependencies = [
     "django-redis>=6.0.0",
     "django-filter>=25.1",
     "jsonfield>=3.2.0",
+    "djangorestframework-stubs>=3.16.8",
 ]
 
 [project.optional-dependencies]
