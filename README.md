@@ -1,318 +1,219 @@
----
+# 🚀 Multi-Tenant SaaS Booking System
 
-# 🏗 Project Architecture Documentation
-
-## Overview
-
-This project follows **Clean Architecture principles** inspired by concepts from **Clean Architecture** by **Robert C. Martin**.
-
-The main goals of this architecture:
-
-* Separation of concerns
-* Independent business logic (framework-agnostic)
-* Easy testing
-* Replaceable infrastructure (DB, messaging, etc.)
-* Scalable and maintainable codebase
+A production-ready backend system where multiple businesses (tenants) can manage services, accept bookings, and operate under a subscription model.
 
 ---
 
-# 📂 Folder Structure Explanation
+## 🧠 Overview
+
+This project simulates a real-world SaaS platform used by businesses such as salons, gyms, and rental services.
+
+Each business can:
+
+* Register and create its own workspace
+* Manage staff and customers
+* Create and manage services
+* Accept and control bookings
+* Use the system through a subscription plan
+
+The system is designed with **scalability, isolation, and production-grade architecture** in mind.
+
+---
+
+## 🏗 Architecture
+
+### 🔑 Multi-Tenancy
+
+Each company (tenant) has fully isolated data:
+
+* Users belong to a company
+* Services belong to a company
+* Bookings belong to a company
 
 ```
-api/
-config/
+Company → Users → Services → Bookings
+```
+
+---
+
+### 🔐 Authentication & Roles
+
+Custom `User` model with role-based access control:
+
+* **Owner** – manages company and subscription
+* **Staff** – manages services and bookings
+* **Customer** – creates bookings
+
+---
+
+### 💳 Subscription System
+
+* Businesses must subscribe to access the platform
+* Plans define usage limits (staff, services, etc.)
+* Subscription lifecycle:
+
+  * Active
+  * Expired
+  * Cancelled
+
+Access to core features is restricted based on subscription status.
+
+---
+
+### ⚡ Background Processing
+
+Using **Celery + Redis** for asynchronous tasks:
+
+* Subscription expiration checks
+* Notifications (email/SMS ready)
+* Non-blocking background jobs
+
+---
+
+### 🚀 Caching
+
+Redis is used to improve performance:
+
+* Cache frequently accessed data (e.g. services)
+* Reduce database load
+
+---
+
+## ⚙️ Tech Stack
+
+* **Backend:** Django, Django REST Framework
+* **Database:** PostgreSQL
+* **Cache & Queue:** Redis
+* **Async Tasks:** Celery
+* **Containerization:** Docker
+
+---
+
+## 📁 Project Structure
+
+```
+apps/
+  users/
+  subscriptions/
+  bookings/
+  services/
+
 core/
-cross_cutting/
-tests/
+  settings/
+  utils/
+
+services/
+  user_service.py
+  subscription_service.py
 ```
 
 ---
 
-# 1️⃣ `api/` – Presentation Layer (Interface Adapters)
+## 🔥 Key Features
 
-This layer handles **external communication** (HTTP, REST, validation, serialization).
-
-It depends on `core`, but `core` NEVER depends on `api`.
-
-### Structure
-
-```
-api/
-├── docs/              # API documentation (Swagger/OpenAPI configs)
-├── middlewares/       # Custom HTTP middlewares
-├── v1/                # Versioned API (v1)
-│   ├── serializers/   # DTOs / request-response schemas
-│   ├── views/         # Controllers / endpoints
-├── validators/        # Request-level validation
-```
-
-### Responsibility
-
-* Accept HTTP requests
-* Validate input
-* Call Application layer
-* Return HTTP response
-
-This layer may use:
-
-* **Django Software Foundation**
-* **Django**
-* **FastAPI**
-
-But switching frameworks should NOT affect business logic.
+* Multi-tenant architecture
+* Role-based access control
+* Subscription & plan management
+* Booking system with conflict prevention
+* Background job processing (Celery)
+* Redis caching
+* Service layer (clean architecture)
 
 ---
 
-# 2️⃣ `config/` – Configuration Layer
+## 🧠 Architecture Decisions
 
-```
-config/
-├── settings/
-```
-
-### Responsibility
-
-* Environment settings
-* App configuration
-* Database configs
-* External service configs
-
-This layer contains:
-
-* Dev / Prod configs
-* Security settings
-* Logging config
+* Used **tenant-based isolation (company_id)** for scalability and simplicity
+* Implemented **service layer** to separate business logic from views
+* Used **Celery** to avoid blocking HTTP requests
+* Applied **database constraints & transactions** to prevent race conditions
+* Designed **subscription-based access control** to simulate real SaaS systems
 
 ---
 
-# 3️⃣ `core/` – Clean Architecture Core
+## 🚀 How to Run
 
-This is the most important part.
+### 1. Clone repository
 
-It contains **Business Logic** and follows layered architecture:
-
-```
-core/
-├── application/
-├── domain/
-└── infrastructure/
+```bash
+git clone https://github.com/yourusername/saas-booking-system.git
+cd saas-booking-system
 ```
 
 ---
 
-## 🧠 3.1 `domain/` – Enterprise Business Rules
+### 2. Run with Docker
 
-Pure business logic.
-
-No framework.
-No database.
-No Django/FastAPI imports.
-
+```bash
+docker-compose up --build
 ```
-domain/
-├── order/
-└── user/
-```
-
-### Contains
-
-* Entities
-* Value Objects
-* Domain Rules
-* Domain Exceptions
-
-Example:
-
-* `User`
-* `Order`
-* `Email`
-* Business validation logic
-
-👉 This is the most stable layer.
 
 ---
 
-## ⚙ 3.2 `application/` – Use Cases Layer
+### 3. Apply migrations
 
-This layer orchestrates business logic.
-
+```bash
+docker-compose exec web python manage.py migrate
 ```
-application/
-├── interfaces/
-├── order/
-└── user/
-```
-
-### Contains
-
-* Use Cases (CreateUser, CreateOrder)
-* DTOs
-* Interfaces (Repository contracts)
-* Application services
-
-Example:
-
-```python
-class CreateUserUseCase:
-    def execute(self, data):
-        ...
-```
-
-### Important Rule
-
-Application depends on:
-
-* Domain ✔
-* Interfaces ✔
-
-But NOT on:
-
-* Database
-* Django ORM
-* External APIs
 
 ---
 
-## 🏗 3.3 `infrastructure/` – External Implementations
+### 4. Create superuser
 
-This layer implements technical details.
-
+```bash
+docker-compose exec web python manage.py createsuperuser
 ```
-infrastructure/
-├── db/
-│   ├── models/
-│   └── repositories/
-└── services/
-```
-
-### Contains
-
-* ORM Models
-* Repository implementations
-* External APIs
-* Email/SMS integrations
-* Message broker implementations
-
-This layer depends on:
-
-* Application interfaces
-* Frameworks
-* Database drivers
-
-Example:
-
-* Django models
-* PostgreSQL repository
-* Redis cache client
 
 ---
 
-# 4️⃣ `cross_cutting/` – Shared Concerns
-
-Reusable modules used across layers.
+## 📬 API Endpoints (Examples)
 
 ```
-shared/
-├── auth/
-├── caching/
-├── error_handling/
-├── logging/
-├── messaging/
-├── monitoring/
-└── validation/
+POST   /auth/register/
+POST   /auth/login/
+
+GET    /plans/
+POST   /subscriptions/subscribe/
+
+POST   /services/
+POST   /bookings/
 ```
-
-### Responsibility
-
-* Authentication
-* Logging
-* Exception handling
-* Caching
-* Monitoring
-* Messaging (RabbitMQ/Kafka)
-* Common validators
-
-These modules should not contain business logic.
 
 ---
 
-# 5️⃣ `tests/` – Testing Strategy
+## 🔒 Business Rules
 
-```
-tests/
-├── e2e/
-├── integration/
-└── unit/
-```
-
-### Unit Tests
-
-* Test domain and application logic
-* No DB required
-
-### Integration Tests
-
-* Test infrastructure (DB, repositories)
-
-### E2E Tests
-
-* Full system testing
-* API → DB → Response
+* Users cannot access core features without an active subscription
+* Expired subscriptions block service creation and bookings
+* Booking conflicts are prevented using database constraints
 
 ---
 
-# 🔄 Dependency Rule (Very Important)
+## 💥 Why This Project Matters
 
-Dependencies always point inward:
+This is not a simple CRUD application.
 
-```
-API → Application → Domain
-Infrastructure → Application
-```
+It demonstrates:
 
-Domain depends on NOTHING.
-
-This ensures:
-
-* Easy framework switching
-* Easy DB switching
-* High testability
+* Real SaaS architecture
+* Multi-tenancy
+* Async processing
+* Clean code practices
+* Production-ready backend design
 
 ---
 
-# 🔥 Why This Architecture Is Powerful
+## 🚀 Future Improvements
 
-✅ Business logic isolated
-✅ Easy to test
-✅ Scalable for microservices
-✅ Replaceable infrastructure
-✅ Framework-independent core
-
----
-
-# 🎯 When To Use This Architecture
-
-Use this when:
-
-* Large project
-* Long-term maintenance required
-* Multiple developers
-* Microservice-ready system
-* Complex domain logic
-
-For small CRUD apps, this might be overkill.
+* Stripe integration for real payments
+* WebSocket-based real-time notifications
+* Advanced analytics dashboard
+* Rate limiting and throttling
+* Multi-language support
 
 ---
 
-# 📌 Summary
+## 👨‍💻 Author
 
-| Layer          | Responsibility  | Depends On  |
-| -------------- | --------------- | ----------- |
-| API            | HTTP handling   | Application |
-| Application    | Use cases       | Domain      |
-| Domain         | Business rules  | Nothing     |
-| Infrastructure | DB / External   | Application |
-| Cross-cutting  | Shared concerns | All layers  |
-| Tests          | Testing         | All layers  |
-
----
+**Kamoliddin Fazliddinov**
+Backend Developer (Python / Django)
