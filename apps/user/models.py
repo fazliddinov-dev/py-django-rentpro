@@ -73,6 +73,7 @@ class EmailOTP(models.Model):
     is_used = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     used_at = models.DateTimeField(null=True, blank=True)
+    registration_data = models.JSONField(null=True, blank=True)
 
     def is_expired(self):
         return timezone.now() > self.created_at + timezone.timedelta(minutes=2)

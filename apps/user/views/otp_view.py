@@ -31,27 +31,19 @@ class VerifyOTPView(APIView):
         code = serializer.validated_data["code"]
 
         try:
-            success = OTPService.verify_otp(email, code)
+            user, created = OTPService.verify_otp(email, code)  # ← unpack tuple
         except PermissionError:
             return Response(
                 {"error": "Too many attempts. Try again later."},
                 status=status.HTTP_429_TOO_MANY_REQUESTS,
             )
 
-        if not success:
-            return Response(
-                {"error": "Invalid or expired code"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        tokens = TokenService.issue_tokens(success)
+        tokens = TokenService.issue_tokens(user)
 
         return Response(
             {
                 **tokens,
-                "user": {
-                    "email": success.email,
-                },
+                "user": {"email": user.email},
             },
-            status=status.HTTP_200_OK,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )

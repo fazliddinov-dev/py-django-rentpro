@@ -5,20 +5,19 @@ from rest_framework.exceptions import ValidationError
 from apps.user.models import EmailOTP
 from apps.user.tasks import send_otp_email_task
 from apps.user.utils import generate_otp
-
 from ..utils import is_locked, register_failure, reset_attempts
 
 User = get_user_model()
 
 
 class OTPService:
+
     @staticmethod
-    def send_otp(email: str) -> None:
+    def send_otp(email: str, registration_data: dict = None) -> None:
         """
         Creates OTP and sends email asynchronously.
+        Optionally stores registration_data to be used after verification.
         """
-
-        # Invalidate previous OTPs
         EmailOTP.objects.filter(email=email, is_used=False).update(is_used=True)
 
         code = generate_otp()
@@ -26,19 +25,20 @@ class OTPService:
         EmailOTP.objects.create(
             email=email,
             code=code,
+            registration_data=registration_data,  # ← store it here
         )
 
-        # Send email async
         send_otp_email_task.delay(email, code)
 
     @staticmethod
     def verify_otp(email: str, code: str):
         """
-        Verifies OTP and returns User.
+        Verifies OTP and returns (user, created) tuple.
+        - If registration_data exists on OTP → creates new user.
+        - Otherwise → fetches existing user (login flow).
         """
-
         if is_locked(email):
-            raise ValidationError("Too many failed attempts. Please try again later.")
+            raise PermissionError("Too many failed attempts. Please try again later.")
 
         otp = EmailOTP.objects.filter(
             email=email,
@@ -47,32 +47,34 @@ class OTPService:
         ).last()
 
         if not otp:
+            register_failure(email)  # track failed attempt
             raise ValidationError("Invalid OTP")
 
         if otp.is_expired():
             raise ValidationError("OTP expired")
 
+        # Mark OTP as used
         otp.is_used = True
         otp.used_at = timezone.now()
         otp.save(update_fields=["is_used", "used_at"])
 
-        user, _ = User.objects.get_or_create(email=email)
+        reset_attempts(email)  # clear failed attempts on success
 
-        return user
+        # Registration flow
+        if otp.registration_data:
+            user = OTPService._create_user(otp.registration_data)
+            return user, True
+
+        # Login flow — user must already exist
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise ValidationError("No account found. Please register first.")
+
+        return user, False
 
     @staticmethod
-    def create_and_store_otp(email: str) -> str:
-        """
-        Creates a new OTP, marks all previous OTPs for this email as used,
-        and returns the new OTP code.
-        """
-        # Invalidate all previous OTPs for this email
-        EmailOTP.objects.filter(email=email, is_used=False).update(is_used=True)
-
-        # Generate new OTP
-        otp_code = generate_otp()
-
-        # Store new OTP
-        EmailOTP.objects.create(email=email, code=otp_code)
-
-        return otp_code
+    def _create_user(registration_data: dict) -> User:
+        """Creates a new user from stored registration data."""
+        from apps.user.services.register_service import register_user
+        return register_user(registration_data)

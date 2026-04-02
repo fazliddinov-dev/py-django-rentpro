@@ -14,11 +14,21 @@ class RegisterView(APIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user = register_service.register_user(serializer.validated_data)
+        email = serializer.validated_data["email"]
 
-        token = token_service.TokenService.issue_tokens(user)
+        # Check email not already registered
+        if User.objects.filter(email=email).exists():
+            raise ValidationError({"email": "An account with this email already exists."})
 
-        return Response({"token": str(token)}, status=status.HTTP_201_CREATED)
+        OTPService.send_otp(
+            email=email,
+            registration_data=serializer.validated_data,  # ← pass it here
+        )
+
+        return Response(
+            {"message": "OTP sent. Please verify your email to complete registration."},
+            status=status.HTTP_200_OK,
+        )
 
 
 class ListUser(APIView):
