@@ -93,10 +93,10 @@ Redis is used to improve performance:
 
 ```
 apps/
-  users/
-  subscriptions/
-  bookings/
-  services/
+  user/
+  subscription/
+  booking/
+  service/
 
 core/
   settings/
