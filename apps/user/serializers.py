@@ -24,8 +24,8 @@ class UserListSerializer(serializers.ModelSerializer):
 
 
 class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField(max_length=20)
-    password = serializers.CharField(max_length=20)
+    email = serializers.CharField()
+    password = serializers.CharField(write_only=True)
 
 
 class SendOTPSerializer(serializers.ModelSerializer):
