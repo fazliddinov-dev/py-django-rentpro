@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from ..models import User
 from ..serializers import RegisterSerializer, UserListSerializer
 from ..services import register_service, token_service
+from ..services.otp_service import OTPService
 
 
 class RegisterView(APIView):
@@ -18,7 +19,9 @@ class RegisterView(APIView):
 
         # Check email not already registered
         if User.objects.filter(email=email).exists():
-            raise ValidationError({"email": "An account with this email already exists."})
+            raise ValidationError(
+                {"email": "An account with this email already exists."}
+            )
 
         OTPService.send_otp(
             email=email,

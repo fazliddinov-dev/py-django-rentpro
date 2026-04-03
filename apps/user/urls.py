@@ -1,5 +1,6 @@
 from django.urls import path
 
+from .views.login_view import LoginView
 from .views.otp_view import SendOTPView, VerifyOTPView
 from .views.register_view import ListUser, RegisterView
 from .views.super_admin_auth import SuperAdminLoginView
@@ -10,4 +11,5 @@ urlpatterns = [
     path("list-users/", ListUser.as_view()),
     path("send-otp/", SendOTPView.as_view()),
     path("verify-otp/", VerifyOTPView.as_view()),
+    path("login/", LoginView.as_view()),
 ]
