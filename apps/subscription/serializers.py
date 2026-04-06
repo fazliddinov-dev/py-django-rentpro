@@ -1,7 +1,7 @@
 from django.db import IntegrityError
 from rest_framework import serializers
 
-from .models import Plan
+from .models import Plan, Subscription
 
 
 class Planserializer(serializers.ModelSerializer):
@@ -24,3 +24,11 @@ class Planserializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
+
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    company = serializers.ReadOnlyField(source="company.id")
+
+    class Meta:
+        model = Subscription
+        fields = ["company", "plan"]

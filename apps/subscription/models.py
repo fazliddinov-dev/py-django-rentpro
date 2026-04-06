@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.db import models, transaction
 
 from ..user.models import Company
@@ -36,13 +38,21 @@ class Plan(models.Model):
             with transaction.atomic():
                 # lock the table rows for update
                 max_order = (
-                    SubscriptionProducts.objects.select_for_update().aggregate(
-                        models.Max("order")
-                    )["order__max"]
+                    Plan.objects.select_for_update().aggregate(models.Max("order"))[
+                        "order__max"
+                    ]
                     or 0
                 )
                 self.order = max_order + 1
         super().save(*args, **kwargs)
+
+    def calculate_end_date(self, start_date):
+        if self.period == self.DAY:
+            return start_date + timedelta(days=self.length)
+        elif self.period == self.MONTH:
+            return start_date + timedelta(days=30 * self.length)
+        elif self.period == self.YEAR:
+            return start_date + timedelta(days=365 * self.length)
 
     def __str__(self):
         return self.name
@@ -53,6 +63,12 @@ class Subscription(models.Model):
         ACTIVE = "active", "Active"
         EXPIRED = "expired", "Expired"
         CANCELLED = "cancelled", "Cancelled"
+        PENDING = "pending", "Pending"
+
+    class PaymentStatus(models.TextChoices):
+        PENDING = "pending", "Pending"
+        COMPLETED = "completed", "Completed"
+        FAILED = "failed", "Failed"
 
     company = models.ForeignKey(
         Company, on_delete=models.CASCADE, related_name="subscriptions"
@@ -63,7 +79,10 @@ class Subscription(models.Model):
     end_date = models.DateTimeField()
 
     status = models.CharField(
-        max_length=20, choices=Status.choices, default=Status.ACTIVE
+        max_length=20, choices=Status.choices, default=Status.PENDING
+    )
+    payment_status = models.CharField(
+        max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING
     )
 
     class Meta:
