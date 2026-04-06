@@ -97,14 +97,8 @@ apps/
   subscription/
   booking/
   service/
+  payment/
 
-core/
-  settings/
-  utils/
-
-services/
-  user_service.py
-  subscription_service.py
 ```
 
 ---

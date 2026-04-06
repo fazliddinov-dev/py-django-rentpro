@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "apps.user",
     "apps.subscription",
+    "apps.payment",
 ]
 
 # Middleware
